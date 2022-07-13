@@ -42,6 +42,7 @@ def createValidAndinvalidDf(conditionArray : Array[String], deequCsv : DataFrame
   print("validRecord.count ==> "+validRecord.count)
   var invalidRecord = deequCsv.filter(applyInValidFilter)
   invalidRecord.createOrReplaceTempView("invalidRecord")
+  // here add row_number bcs uniqueness of duplicate invalid rows
   invalidRecord = spark.sql("select row_number() over (order by empname) as rnk,* from invalidRecord ")
   print("invalidRecord.count ==> "+invalidRecord.count)
   var invalidRow = scala.collection.mutable.Map[String, String]()
