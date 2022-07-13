@@ -26,14 +26,17 @@ import org.apache.spark.sql.DataFrame
   ,2022-07-31,1234568,ABC,ABC
   """
 */
-
+// informSchema = true means its take automatically schema 
 val deequCsv = spark.read.option("header", "true").option("inferSchema","true").csv("/tmp/deequ.csv")
 
 val conditionArray = Array("EmpName IS NOT NULL", "to_date(ContractExpDate) >= CURRENT_DATE", "length(EmpNo) BETWEEN 6 AND 8", "length(ID) = 3 AND ID = Code ")
 
 def createValidAndinvalidDf(conditionArray : Array[String], deequCsv : DataFrame) : Array[DataFrame] = {
+ //here merge all business rule with and
   val applyValidFilter = conditionArray.mkString(" AND ")
+
   val applyInValidFilterArray = conditionArray.map(i => "!("+i+")")
+  // here merge all business rule with or
   val applyInValidFilter = applyInValidFilterArray.mkString(" OR ")
   val validRecord = deequCsv.filter(applyValidFilter)
   print("validRecord.count ==> "+validRecord.count)
