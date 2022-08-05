@@ -63,7 +63,6 @@ object DataValidation {
     var invalidRecord = dfArray(1)
     println(s"validRecord Count = ${validRecord}")
     println(s"invalidRecord Count = ${invalidRecord}")
-    invalidRecord.collect().foreach(println)
     validRecord.write.option("header", true).csv("D:\\Project Data\\SparkDataFiles\\valid.csv")
     invalidRecord.write.option("header", true).csv("D:\\Project Data\\SparkDataFiles\\invalid.csv")
   }
