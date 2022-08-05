@@ -3,7 +3,7 @@ import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
 import org.apache.spark.sql.functions._
 
-object Main {
+object DataValidation {
 
   def createValidAndinvalidDf(conditionArray: Array[String], deequCsv: DataFrame, spark: SQLContext, customMsgArray: Array[String]): Array[DataFrame] = {
     //here merge all business rule with and
@@ -27,10 +27,9 @@ object Main {
       val newDf = invalidRecord.filter(i).select("rnk")
       for (j <- newDf.rdd.collect) {
         // get customMsgArray based on index
-        var value = customMsgArray(index);
-        println(s"value : ${value},j(0) : ${j(0)},custom Msg : ${customMsgArray(index)}")
+        var value = customMsgArray(index)
         if (invalidRow.contains(s"${j(0)}")) {
-          value = invalidRow.get(s"${j(0)}").get + "," + customMsgArray(index)
+          value = invalidRow.get(s"${j(0)}").get + "," + value
         }
         invalidRow(s"${j(0)}") = value
       }
