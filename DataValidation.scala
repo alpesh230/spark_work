@@ -3,9 +3,9 @@ import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
 import org.apache.spark.sql.functions._
 
-object DataValidation {
+object Main {
 
-  def createValidAndinvalidDf(conditionArray: Array[String], deequCsv: DataFrame, spark: SQLContext): Array[DataFrame] = {
+  def createValidAndinvalidDf(conditionArray: Array[String], deequCsv: DataFrame, spark: SQLContext, customMsgArray: Array[String]): Array[DataFrame] = {
     //here merge all business rule with and
     val applyValidFilter = conditionArray.mkString(" AND ")
 
@@ -19,20 +19,22 @@ object DataValidation {
     // here add row_number bcs uniqueness of duplicate invalid rows
     val windowSpec = Window.partitionBy("ContractExpDate").orderBy("empname")
     invalidRecord = invalidRecord.withColumn("rnk",row_number.over(windowSpec))
-	// This "WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation." 
-	// issue is bcs of below line of code changed with line # 21 code
     // invalidRecord = spark.sql("select row_number() over (order by empname) as rnk,* from invalidRecord ")
     println("invalidRecord.count ==> " + invalidRecord.count)
     var invalidRow = scala.collection.mutable.Map[String, String]()
+    var index = 0
     for (i <- applyInValidFilterArray) {
       val newDf = invalidRecord.filter(i).select("rnk")
       for (j <- newDf.rdd.collect) {
-        var value = i;
+        // get customMsgArray based on index
+        var value = customMsgArray(index);
+        println(s"value : ${value},j(0) : ${j(0)},custom Msg : ${customMsgArray(index)}")
         if (invalidRow.contains(s"${j(0)}")) {
-          value = invalidRow.get(s"${j(0)}") + "," + value
+          value = invalidRow.get(s"${j(0)}").get + "," + customMsgArray(index)
         }
         invalidRow(s"${j(0)}") = value
       }
+      index = index + 1
     }
 
     import spark.implicits._
@@ -54,12 +56,15 @@ object DataValidation {
     println(csv.count())
     println("Start Calling")
     val conditionArray = Array("EmpName IS NOT NULL", "to_date(ContractExpDate) >= CURRENT_DATE", "length(EmpNo) BETWEEN 6 AND 8", "length(ID) = 3 AND ID = Code ")
+    // Add new custom Array and passed in createValidAndinvalidDf() method
+    val customMsgArray = Array("EmpName IS NULL", "ContractExpDate Date invalid", "EmpNo Length must be in between 6 and 8", "Id length not 3 or id and code mismatched ")
 
-    var dfArray = createValidAndinvalidDf(conditionArray, csv, sq)
+    var dfArray = createValidAndinvalidDf(conditionArray, csv, sq, customMsgArray)
     var validRecord = dfArray(0)
     var invalidRecord = dfArray(1)
     println(s"validRecord Count = ${validRecord}")
     println(s"invalidRecord Count = ${invalidRecord}")
+    invalidRecord.collect().foreach(println)
     validRecord.write.option("header", true).csv("D:\\Project Data\\SparkDataFiles\\valid.csv")
     invalidRecord.write.option("header", true).csv("D:\\Project Data\\SparkDataFiles\\invalid.csv")
   }
